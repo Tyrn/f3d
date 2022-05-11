@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -99,11 +99,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t buf[1000];
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // VCP demonstration - Echo all data received over VCP back to the host
+    int len = vcp_recv (buf, 1000);  // Read up to 1000 bytes
+    if (len > 0)    // If some data was read, send it back :
+      len = vcp_send (buf, len);
   }
   /* USER CODE END 3 */
 }
