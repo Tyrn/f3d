@@ -65,6 +65,14 @@
 
 /* USER CODE BEGIN EXPORTED_TYPES */
 
+ typedef struct VCP_FIFO_TYPE
+ {
+   uint8_t* data;  // Will point to the Cube-generated Tx or Rx buffer
+   int  wr;    // Write index
+   int  rd;    // Read index
+   int  lb;    // Additional index
+ } VCP_FIFO;
+
 /* USER CODE END EXPORTED_TYPES */
 
 /**

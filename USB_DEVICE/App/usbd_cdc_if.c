@@ -95,6 +95,11 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 
+// Circular FIFO to store outgoing data until it can be sent over USB
+VCP_FIFO vcp_tx_fifo;
+// Circular FIFO to store incoming data from the host over USB
+VCP_FIFO vcp_rx_fifo;
+
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
