@@ -318,6 +318,95 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
+int vcp_send (uint8_t* buf, uint16_t len)
+{
+  // Step 1 : calculate the occupied space in the Tx FIFO
+  int cap = vcp_tx_fifo.wr - vcp_tx_fifo.rd;   // occupied capacity
+  if (cap < 0)    // FIFO contents wrap around
+    cap += APP_TX_DATA_SIZE;
+  cap = APP_TX_DATA_SIZE - cap;      // available capacity
+  // Step 2 : compare with argument
+  if (cap < len)
+    return -1;   // Not enough room to copy "buf" into the FIFO => error
+  // Step 3 : does buf fit in the tail ?
+  int tail = APP_TX_DATA_SIZE - vcp_tx_fifo.wr;
+  if (tail >= len)
+  {
+    // Copy buf into the tail of the FIFO
+    memcpy (&vcp_tx_fifo.data[vcp_tx_fifo.wr], buf, len);
+    // Update "wr" index
+    vcp_tx_fifo.wr += len;
+    // In case "len" == "tail", next write goes to the head
+    if (vcp_tx_fifo.wr == APP_TX_DATA_SIZE)
+      vcp_tx_fifo.wr = 0;
+  }
+  else
+  {
+    // Copy the head of "buf" to the tail of the FIFO
+    memcpy (&vcp_tx_fifo.data[vcp_tx_fifo.wr], buf, tail);
+    // Copy the tail of "buf" to the head of the FIFO :
+    memcpy (vcp_tx_fifo.data, &buf[tail], len - tail);
+    // Update the "wr" index
+    vcp_tx_fifo.wr = len - tail;
+  }
+  return 0;  // successful completion
+}
+
+int vcp_recv (uint8_t* buf, uint16_t len)
+{
+  // Compute how much data is in the FIFO
+  int cap = vcp_rx_fifo.wr - vcp_rx_fifo.rd;
+  if (cap == 0)
+    return 0;      // Empty FIFO, no data to read
+  if (cap < 0)  // FIFO contents wrap around
+    cap += vcp_rx_fifo.lb;  // Notice the use of lb
+  // Limit the FIFO read to the available data
+  if (len > cap)
+    len = cap;
+  // Save len : it'll be the return value
+  int retval = len;
+  // Read the data
+  while (len)
+  {
+    len--;
+    *buf = vcp_rx_fifo.data[vcp_rx_fifo.rd];
+    buf++;
+    vcp_rx_fifo.rd++;    // Update read index
+    if (vcp_rx_fifo.rd == vcp_rx_fifo.lb)  // Check for wrap-around
+      vcp_rx_fifo.rd = 0;      // Follow wrap-around
+  }
+  return retval;
+}
+
+void vcp_service ()
+{
+USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+  // Test if the USB CDC is ready to transmit
+  if (hcdc->TxState == 0)
+  {
+    // Update the FIFO to reflect the completion of the last transmission
+    vcp_tx_fifo.rd = vcp_tx_fifo.lb;
+    // Compute how much data is in the FIFO
+    int cap = vcp_tx_fifo.wr - vcp_tx_fifo.rd;
+    if (cap != 0)  // The FIFO is empty : return immediately
+    {
+      if (cap < 0)  // The FIFO contents wrap-around
+      {
+        // Send only the tail of the FIFO
+        USBD_CDC_SetTxBuffer(&hUsbDeviceFS, &vcp_tx_fifo.data[vcp_tx_fifo.rd], APP_TX_DATA_SIZE - vcp_tx_fifo.rd);
+        USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+        vcp_tx_fifo.lb = 0;    // Lock the tail’s data
+      }
+      else  // No wrap-around : send the whole FIFO
+      {
+        USBD_CDC_SetTxBuffer(&hUsbDeviceFS, &vcp_tx_fifo.data[vcp_tx_fifo.rd], cap);
+        USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+        vcp_tx_fifo.lb = vcp_tx_fifo.wr; // lock the data
+      }
+    }
+  }
+}
+
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
