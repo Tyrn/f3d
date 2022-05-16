@@ -8,33 +8,13 @@
  *
  */
 
-// Core/Src/main.c:
-...
-/* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
-/* USER CODE END Includes */
-...
-  /* USER CODE BEGIN WHILE */
-  uint8_t buf[1000];
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-    // VCP demonstration - Echo all data received over VCP back to the host
-    int len = vcp_recv (buf, 1000);  // Read up to 1000 bytes
-    if (len > 0)    // If some data was read, send it back :
-      len = vcp_send (buf, len);
-  }
-  /* USER CODE END 3 */
-...
 
 // USB_DEVICE/App/usbd_cdc_if.h:
 ...
-/* USER CODE BEGIN EXPORTED_DEFINES */
 /* Define size for the receive and transmit buffer over CDC */
 #define APP_RX_DATA_SIZE  1000
 #define APP_TX_DATA_SIZE  1000
+/* USER CODE BEGIN EXPORTED_DEFINES */
 #define RX_BUFFER_MAX_WRITE_INDEX (APP_RX_DATA_SIZE - CDC_DATA_FS_MAX_PACKET_SIZE)
 /* USER CODE END EXPORTED_DEFINES */
 ...
@@ -56,6 +36,7 @@ int vcp_recv(uint8_t* buf, uint16_t len);
 void vcp_service();
 /* USER CODE END EXPORTED_FUNCTIONS */
 ...
+
 
 // USB_DEVICE/App/usbd_cdc_if.c:
 ...
@@ -108,6 +89,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE END 6 */
 }
 ...
+// Generated and left as is?
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
@@ -216,6 +198,7 @@ USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 ...
 
+
 // Core/Src/stm32f3xx_it.c:
 ...
 /* USER CODE BEGIN Includes */
@@ -234,3 +217,26 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 1 */
 }
 ...
+
+
+// Core/Src/main.c:
+...
+/* USER CODE BEGIN Includes */
+#include "usbd_cdc_if.h"
+/* USER CODE END Includes */
+...
+  /* USER CODE BEGIN WHILE */
+  uint8_t buf[1000];
+  while (1)
+  {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+    // VCP demonstration - Echo all data received over VCP back to the host
+    int len = vcp_recv (buf, 1000);  // Read up to 1000 bytes
+    if (len > 0)    // If some data was read, send it back :
+      len = vcp_send (buf, len);
+  }
+  /* USER CODE END 3 */
+...
+
